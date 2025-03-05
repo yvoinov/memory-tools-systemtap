@@ -12,6 +12,7 @@ To perform tracing or profiling, call the script using the process ID as an argu
 The scripts run as an infinite loop until interrupted. Scripts print results upon interruption.
 
 Example:
+
 ```sh
 # profile-malloc.stp 88843
 Tracing allocations for PID 88843
@@ -23,4 +24,5 @@ malloc(512): 672
 malloc(1024): 168
 malloc(65536): 168
 ```
+
 **Note**: You will have to edit the full path to the libc library specified as a macro.
