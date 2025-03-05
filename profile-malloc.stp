@@ -1,0 +1,48 @@
+#!/usr/bin/env stap
+
+@define libc_abs_path %( "/lib/x86_64-linux-gnu/libc.so.6" %)
+@define max_bucket_size %( 8388608 %)  # 1024*1024*8 = 8388608 - max.bucket size
+@define min_bucket_size %( 64 %)
+
+global malloc_histogram
+global traced_pid
+
+probe begin {
+    arg1 = strtol(argv[1], 10)
+    if (arg1 == 0) {
+        printf("Error: No target PID specified.\n")
+        exit()
+    }
+    traced_pid = arg1
+    printf("Tracing allocations for PID %d\n", traced_pid)
+}
+
+function bucket(size) {
+    if (size <= 0) return 0
+    sz = @min_bucket_size
+    while (sz < size) sz *= 2
+    return sz
+}
+
+probe begin {
+    printf("Collecting data... press Ctrl-C to stop.\n")
+}
+
+probe process(@libc_abs_path).function("malloc").call {
+    if (pid() == traced_pid) {
+        malloc_histogram["malloc", bucket($bytes)]++
+    }
+}
+
+probe end {
+    printf("\nMemory Allocation Stats for PID %d:\n", traced_pid)
+
+    # Walk through the buckets, from smaller to larger
+    bucket_size = @min_bucket_size
+    while (bucket_size <= @max_bucket_size) {
+        if (malloc_histogram["malloc", bucket_size] > 0) {
+            printf("malloc(%d): %d\n", bucket_size, malloc_histogram["malloc", bucket_size])
+        }
+        bucket_size *= 2  # Next bucket
+    }
+}

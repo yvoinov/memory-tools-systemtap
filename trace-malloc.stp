@@ -1,0 +1,33 @@
+#!/usr/bin/env stap
+
+@define libc_abs_path %( "/lib/x86_64-linux-gnu/libc.so.6" %)
+@define min_bucket_size %( 64 %)
+
+global traced_pid
+
+probe begin {
+    arg1 = strtol(argv[1], 10)
+    if (arg1 == 0) {
+        printf("Error: No target PID specified.\n")
+        exit()
+    }
+    traced_pid = arg1
+    printf("Tracing allocations for PID %d\n", traced_pid)
+}
+
+function bucket(size) {
+    if (size <= 0) return 0
+    sz = @min_bucket_size
+    while (sz < size) sz *= 2
+    return sz
+}
+
+probe begin {
+    printf("Tracing... press Ctrl-C to stop.\n")
+}
+
+probe process(@libc_abs_path).function("malloc").call {
+    if (pid() == traced_pid) {
+        printf("malloc(%d)\n", $bytes)
+    }
+}
