@@ -13,8 +13,7 @@ The scripts run as an infinite loop until interrupted. Scripts print results upo
 
 Example:
 ```sh
-# profile-calloc.stp 88843
-stap profile-malloc.stp 88843
+# profile-malloc.stp 88843
 Tracing allocations for PID 88843
 Collecting data... press Ctrl-C to stop.
 ^C
